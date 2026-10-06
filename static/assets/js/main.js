@@ -5,8 +5,8 @@
         //     upload-img / reset-img)への参照をすべてnull安全化。
         //     旧版は1行目のTypeErrorでスクリプト全体が停止し、
         //     ダークモード切替・パニックキー等が未登録になっていた。
-        //  2) 初回訪問時(保存値なし)はHTMLのchecked="checked"を
-        //     尊重してダークモードを既定にする。
+        //  2) 初回訪問時(保存値なし)は元サイトと同じライト
+        //     (白背景/#4c4c4c)を既定にする。
         // ============================================================
 
         const $ = (id) => document.getElementById(id);
@@ -51,9 +51,9 @@
             const checkbox = $("backgroundToggle");
             if (!checkbox) return;
 
-            // 保存値が無い(初回訪問)場合は checked="checked" 通りダークが既定
-            const stored = localStorage.getItem("backgroundToggle");
-            var isChecked = stored === null ? true : stored === "true";
+            // 初回訪問(保存値なし)はライト = 元サイトと同じ白背景/#4c4c4c
+            // (元テンプレートの loadBackground と同一ロジック)
+            var isChecked = localStorage.getItem("backgroundToggle") === "true";
 
             checkbox.checked = isChecked;
             toggleBackground();

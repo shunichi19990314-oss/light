@@ -64,7 +64,7 @@ assets/js/main.js の3ファイルのみ本家と差異あり**。他9ファイ�
 | # | 本家のバグ | 修正内容 | 検証(Headless Chrome) |
 |---|---|---|---|
 | 1 | `main.js`が1行目でTypeError(存在しない`colorPicker`等7 IDを参照)→ 後続が全滅 | 全要素参照をnull安全化 | JSエラー 2→**0** |
-| 2 | ダーク/ライト切替が listener 未登録で機能しない | 上記により復活。初回既定はHTMLの`checked`通りダーク | 黒→白→黒 切替**OK** |
+| 2 | ダーク/ライト切替が listener 未登録で機能しない | 上記により復活。初回既定は元サイトと同じライト(白背景) | 白→黒→白 切替**OK** |
 | 3 | `<body onload="startTime()">`の`startTime`未定義でReferenceError | `onload`属性を削除 | エラー消滅 |
 | 4 | パニックキー(`` ` ``→desmos.com)が未登録で不発 | DOMContentLoaded登録が実行されるようになり復活 | 押下で**発動OK** |
 | 5 | SW登録前にEnterでネイティブGET送信(リロード)レース / 孤立`</h2>` / 未使用null参照 | submit即登録+登録完了await / タグ削除 / デッドコード削除 | フォーム→`/uv/service/`遷移+プロキシ表示**OK** |
