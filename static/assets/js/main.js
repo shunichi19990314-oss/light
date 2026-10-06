@@ -1,135 +1,125 @@
-       const colorPicker = document.getElementById("colorPicker");
-        colorPicker.addEventListener("input", function () {
-            document.documentElement.style.setProperty(
-                "--theme-color",
-                colorPicker.value
-            );
-            localStorage.setItem("themeColor", colorPicker.value);
-        });
+        // ============================================================
+        // 改造版JWP main.js — 継承バグ修正版
+        // 修正内容:
+        //  1) 存在しない要素ID(colorPicker×3 / keyInput / time /
+        //     upload-img / reset-img)への参照をすべてnull安全化。
+        //     旧版は1行目のTypeErrorでスクリプト全体が停止し、
+        //     ダークモード切替・パニックキー等が未登録になっていた。
+        //  2) 初回訪問時(保存値なし)はHTMLのchecked="checked"を
+        //     尊重してダークモードを既定にする。
+        // ============================================================
 
-        const savedColor = localStorage.getItem("themeColor");
-        if (savedColor) {
-            document.documentElement.style.setProperty(
-                "--theme-color",
-                savedColor
-            );
-            colorPicker.value = savedColor;
+        const $ = (id) => document.getElementById(id);
+
+        // --- テーマカラーピッカー(設定パネル要素があれば動作) ---
+        function initColorPicker(inputId, cssVar, storageKey) {
+            const picker = $(inputId);
+            if (!picker) return; // 要素が無ければスキップ(旧版: ここでTypeError)
+            picker.addEventListener("input", function () {
+                document.documentElement.style.setProperty(
+                    cssVar,
+                    picker.value
+                );
+                localStorage.setItem(storageKey, picker.value);
+            });
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                document.documentElement.style.setProperty(cssVar, saved);
+                picker.value = saved;
+            }
         }
 
-        const colorPicker2 = document.getElementById("colorPicker2");
-        colorPicker2.addEventListener("input", function () {
-            document.documentElement.style.setProperty(
-                "--shadow-color",
-                colorPicker2.value
-            );
-            localStorage.setItem("shadowColor", colorPicker2.value);
-        });
+        initColorPicker("colorPicker", "--theme-color", "themeColor");
+        initColorPicker("colorPicker2", "--shadow-color", "shadowColor");
+        initColorPicker("colorPicker3", "--shadow-color2", "shadowColor2");
 
-        const savedColor2 = localStorage.getItem("shadowColor");
-        if (savedColor2) {
-            document.documentElement.style.setProperty(
-                "--shadow-color",
-                savedColor2
-            );
-            colorPicker2.value = savedColor2;
-        }
-
-        const colorPicker3 = document.getElementById("colorPicker3");
-        colorPicker3.addEventListener("input", function () {
-            document.documentElement.style.setProperty(
-                "--shadow-color2",
-                colorPicker3.value
-            );
-            localStorage.setItem("shadowColor2", colorPicker3.value);
-        });
-
-        const savedColor3 = localStorage.getItem("shadowColor2");
-        if (savedColor3) {
-            document.documentElement.style.setProperty(
-                "--shadow-color2",
-                savedColor3
-            );
-            colorPicker3.value = savedColor3;
-        }
-
-        // Function to toggle the background color
+        // --- ダーク/ライト切替 ---
         function toggleBackground() {
-            // Check the current state of the checkbox
-            var isChecked = document.getElementById("backgroundToggle").checked;
+            const checkbox = $("backgroundToggle");
+            if (!checkbox) return;
 
-            // Set the background color based on the checkbox state
+            // チェック状態に応じて背景色を設定
+            var isChecked = checkbox.checked;
             document.body.style.backgroundColor = isChecked ? "black" : "white";
             document.body.style.color = isChecked ? "#fff" : "#4c4c4c";
-            
 
-            // Save the state to local storage
+            // 状態を保存
             localStorage.setItem("backgroundToggle", isChecked);
         }
 
-        // Function to load the saved background color
         function loadBackground() {
-            // Get the saved state from local storage
-            var isChecked = localStorage.getItem("backgroundToggle") === "true";
+            const checkbox = $("backgroundToggle");
+            if (!checkbox) return;
 
-            // Set the checkbox state and background color
-            document.getElementById("backgroundToggle").checked = isChecked;
+            // 保存値が無い(初回訪問)場合は checked="checked" 通りダークが既定
+            const stored = localStorage.getItem("backgroundToggle");
+            var isChecked = stored === null ? true : stored === "true";
+
+            checkbox.checked = isChecked;
             toggleBackground();
         }
 
-        // Add event listener to the checkbox
         document.addEventListener("DOMContentLoaded", function () {
-            var checkbox = document.getElementById("backgroundToggle");
-            checkbox.addEventListener("change", toggleBackground);
-
-            // Load the background color when the page is loaded
+            var checkbox = $("backgroundToggle");
+            if (checkbox) {
+                checkbox.addEventListener("change", toggleBackground);
+            }
             loadBackground();
         });
-        // Check for saved background in localStorage
+
+        // --- カスタム背景画像 ---
         if (localStorage.getItem("backgroundImage")) {
-            document.getElementById("background").style.backgroundImage =
-                localStorage.getItem("backgroundImage");
+            const bg = $("background");
+            if (bg) {
+                bg.style.backgroundImage = localStorage.getItem("backgroundImage");
+            }
         }
 
-        document
-            .getElementById("upload-img")
-            .addEventListener("click", function () {
-                document.getElementById("file-input").click();
+        const uploadImg = $("upload-img");
+        const fileInput = $("file-input");
+        if (uploadImg && fileInput) {
+            uploadImg.addEventListener("click", function () {
+                fileInput.click();
             });
+        }
 
-        document
-            .getElementById("file-input")
-            .addEventListener("change", function (event) {
+        if (fileInput) {
+            fileInput.addEventListener("change", function (event) {
                 var file = event.target.files[0];
+                if (!file) return;
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     var backgroundImage = "url(" + e.target.result + ")";
-                    document.getElementById(
-                        "background"
-                    ).style.backgroundImage = backgroundImage;
+                    const bg = $("background");
+                    if (bg) bg.style.backgroundImage = backgroundImage;
                     localStorage.setItem("backgroundImage", backgroundImage);
                 };
                 reader.readAsDataURL(file);
             });
+        }
 
-        document
-            .getElementById("reset-img")
-            .addEventListener("click", function () {
-                // Reset the background to the default state
-                document.getElementById("background").style.backgroundImage =
-                    "";
+        const resetImg = $("reset-img");
+        if (resetImg) {
+            resetImg.addEventListener("click", function () {
+                const bg = $("background");
+                if (bg) bg.style.backgroundImage = "";
                 localStorage.removeItem("backgroundImage");
             });
+        }
 
+        // --- 時計(#time 要素がある場合のみ動作) ---
         function myClock() {
             setTimeout(function () {
+                const timeEl = $("time");
+                if (!timeEl) return; // 要素が無ければ停止(旧版: TypeErrorで例外)
                 const d = new Date();
-                const n = d.toLocaleTimeString();
-                document.getElementById("time").innerHTML = n;
+                timeEl.innerHTML = d.toLocaleTimeString();
                 myClock();
             }, 1000);
         }
         myClock();
 
+        // --- 全画面 ---
         var elem = document.documentElement;
 
         function openFullscreen() {
@@ -155,30 +145,31 @@
                 document.msExitFullscreen();
             }
         }
+
+        // --- パニックキー(既定: ` キーで desmos.com へ) ---
         document.addEventListener("DOMContentLoaded", () => {
             const currentUrl = "https://desmos.com";
             const defaultKey = "`";
             let triggerKey = defaultKey;
 
             function updateTriggerKey(value) {
-                triggerKey = value.slice(0, 1); // Limit to the first character
+                triggerKey = value.slice(0, 1); // 先頭1文字に制限
             }
 
-            document
-                .getElementById("keyInput")
-                .addEventListener("input", (e) => {
+            const keyInput = $("keyInput");
+            if (keyInput) {
+                keyInput.addEventListener("input", (e) => {
                     updateTriggerKey(e.target.value);
                 });
-
-            document
-                .getElementById("keyInput")
-                .addEventListener("keypress", (e) => {
+                keyInput.addEventListener("keypress", (e) => {
                     if (e.key === "Enter") {
                         updateTriggerKey(e.target.value);
-                        e.preventDefault(); // Prevent form submission if inside a form
+                        e.preventDefault();
                     }
                 });
+            }
 
+            // keyInput要素が無くても既定キー(`)でパニックキーは機能する
             document.addEventListener("keydown", (e) => {
                 if (e.key === triggerKey) {
                     window.location.href = currentUrl;
@@ -186,6 +177,7 @@
             });
         });
 
+        // --- クローク(Google風の新規ウィンドウ) ---
         function openGame() {
             var win = window.open();
             var url = window.location.href;

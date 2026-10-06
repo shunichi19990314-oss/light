@@ -56,14 +56,20 @@ railway domain    # 公開ドメインを発行
 - [x] 404 の挙動(`Cannot GET ...`)まで本家と同一
 - [x] Service Worker(`/uv/sw.js`)の配信と `Cache-Control: no-store`
 
-## 補足(本家由来の仕様/クセも再現)
+## 本家からの変更点(継承バグ修正 — 2026-10-06)
 
-- 本家の `main.js` は HTML に存在しない要素(`colorPicker` 等)を参照しており、
-  読み込み時に TypeError が出ます(本家と同じ挙動)。検索バー・ヘルプ(?)・
-  クローク(目のアイコン、about:blank 風の別窓表示)は正常動作します。
-- パニックキー(デフォルト `` ` `` キーで desmos.com へ遷移)は上記エラーの影響で
-  本家では未登録のままです。こちらも本家と同じ状態にしてあります。
-- タイトル/ファビコンは Google 偽装(本家同様)。
+本家サイトにある以下のバグを修正しています(**index.html / assets/js/index.js /
+assets/js/main.js の3ファイルのみ本家と差異あり**。他9ファイルはSHA-256完全一致のまま)。
+
+| # | 本家のバグ | 修正内容 | 検証(Headless Chrome) |
+|---|---|---|---|
+| 1 | `main.js`が1行目でTypeError(存在しない`colorPicker`等7 IDを参照)→ 後続が全滅 | 全要素参照をnull安全化 | JSエラー 2→**0** |
+| 2 | ダーク/ライト切替が listener 未登録で機能しない | 上記により復活。初回既定はHTMLの`checked`通りダーク | 黒→白→黒 切替**OK** |
+| 3 | `<body onload="startTime()">`の`startTime`未定義でReferenceError | `onload`属性を削除 | エラー消滅 |
+| 4 | パニックキー(`` ` ``→desmos.com)が未登録で不発 | DOMContentLoaded登録が実行されるようになり復活 | 押下で**発動OK** |
+| 5 | SW登録前にEnterでネイティブGET送信(リロード)レース / 孤立`</h2>` / 未使用null参照 | submit即登録+登録完了await / タグ削除 / デッドコード削除 | フォーム→`/uv/service/`遷移+プロキシ表示**OK** |
+
+プロキシ本体(Ultraviolet/bare)の挙動は本家と同一のままです。
 
 ## 注意事項
 

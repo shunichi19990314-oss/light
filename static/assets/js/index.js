@@ -1,5 +1,16 @@
 "use strict";
 
+// ============================================================
+// 改造版JWP index.js — 継承バグ修正版
+// 修正内容:
+//  1) 存在しない要素(uv-search-engine / uv-error / uv-error-code)
+//     への未使用参照と未使用変数(input)を削除。
+//  2) submitハンドラをService Worker登録完了「前」に登録。
+//     旧版は登録完了後にしかlistenerを付けなかったため、
+//     登録前にEnterを押すとネイティブGET送信でページが
+//     リロードされるレースがあった。
+// ============================================================
+
 /**
  * @type {HTMLFormElement}
  */
@@ -8,20 +19,6 @@ const form = document.getElementById("uv-form");
  * @type {HTMLInputElement}
  */
 const address = document.getElementById("uv-address");
-/**
- * @type {HTMLInputElement}
- */
-const searchEngine = document.getElementById("uv-search-engine");
-/**
- * @type {HTMLParagraphElement}
- */
-const error = document.getElementById("uv-error");
-/**
- * @type {HTMLPreElement}
- */
-const errorCode = document.getElementById("uv-error-code");
-
-const input = document.querySelector("input");
 
 // crypts class definition
 class crypts {
@@ -71,6 +68,10 @@ function search(input) {
     }
   }
 }
+
+// Service Worker 登録 Promise (登録完了をsubmit時に待つために保持)
+let swReady = null;
+
 if ('serviceWorker' in navigator) {
   var proxySetting = 'uv';
   let swConfig = {
@@ -79,17 +80,35 @@ if ('serviceWorker' in navigator) {
 
   let { file: swFile, config: swConfigSettings } = swConfig[proxySetting];
 
-  navigator.serviceWorker.register(swFile, { scope: swConfigSettings.prefix })
+  swReady = navigator.serviceWorker
+    .register(swFile, { scope: swConfigSettings.prefix })
     .then((registration) => {
       console.log('ServiceWorker registration successful with scope: ', registration.scope);
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        
-        let encodedUrl = swConfigSettings.prefix + crypts.encode(search(address.value));
-        location.href = encodedUrl;
-      });
+      return swConfigSettings;
     })
     .catch((error) => {
       console.error('ServiceWorker registration failed:', error);
+      throw error;
     });
+}
+
+// 修正: listenerは即座に登録し、送信時にSW登録完了をawaitする
+if (form) {
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    if (!swReady) {
+      // Service Worker非対応環境: リロードは起こさず何もしない(旧版同等)
+      return;
+    }
+
+    try {
+      const swConfigSettings = await swReady;
+      const encodedUrl = swConfigSettings.prefix + crypts.encode(search(address ? address.value : ''));
+      location.href = encodedUrl;
+    } catch (error) {
+      // 登録失敗時もネイティブ送信(リロード)は発生させない
+      console.error('Proxy unavailable:', error);
+    }
+  });
 }
