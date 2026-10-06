@@ -34,29 +34,33 @@
         initColorPicker("colorPicker3", "--shadow-color2", "shadowColor2");
 
         // --- ダーク/ライト切替 ---
+        // 保存キーをV2に変更: 旧版(ダーク既定ビルド)がlocalStorageに
+        // 書き込んだ "true" の残骸を完全に無視し、元サイトと同じ
+        // ライト(白背景/#4c4c4c)から確実に開始できるようにする。
+        const BG_TOGGLE_KEY = "backgroundToggleV2";
+
+        function applyBackground(isChecked, save) {
+            document.body.style.backgroundColor = isChecked ? "black" : "white";
+            document.body.style.color = isChecked ? "#fff" : "#4c4c4c";
+            if (save) localStorage.setItem(BG_TOGGLE_KEY, isChecked);
+        }
+
         function toggleBackground() {
             const checkbox = $("backgroundToggle");
             if (!checkbox) return;
-
-            // チェック状態に応じて背景色を設定
-            var isChecked = checkbox.checked;
-            document.body.style.backgroundColor = isChecked ? "black" : "white";
-            document.body.style.color = isChecked ? "#fff" : "#4c4c4c";
-
-            // 状態を保存
-            localStorage.setItem("backgroundToggle", isChecked);
+            // ユーザー操作(change)のときだけ保存する
+            applyBackground(checkbox.checked, true);
         }
 
         function loadBackground() {
             const checkbox = $("backgroundToggle");
             if (!checkbox) return;
 
-            // 初回訪問(保存値なし)はライト = 元サイトと同じ白背景/#4c4c4c
-            // (元テンプレートの loadBackground と同一ロジック)
-            var isChecked = localStorage.getItem("backgroundToggle") === "true";
+            // 保存値が無い(初回訪問)場合はライト = 元サイトと同じ
+            var isChecked = localStorage.getItem(BG_TOGGLE_KEY) === "true";
 
             checkbox.checked = isChecked;
-            toggleBackground();
+            applyBackground(isChecked, false); // 読み込み時に保存へ書き戻さない
         }
 
         document.addEventListener("DOMContentLoaded", function () {
