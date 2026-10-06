@@ -1,0 +1,17 @@
+{
+  "name": "kaizo-jwp",
+  "version": "1.0.0",
+  "description": "改造版Japanese Proxy Web - Railway edition (Ultraviolet + bare-server-node)",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@tomphttp/bare-server-node": "2.0.3",
+    "express": "^4.21.2"
+  }
+}
