@@ -13,15 +13,7 @@ const bare = createBareServer("/bare/", {
 
 const app = express();
 
-app.use((req, res, next) => {
-	// Service Worker やプロキシ用パスは絶対にキャッシュさせない
-	if (req.path.startsWith("/uv/") || req.path.startsWith("/bare/")) {
-		res.setHeader("Cache-Control", "no-store");
-	}
-	next();
-});
-
-app.use(express.static(publicPath, { extensions: ["html"] }));
+app.use(express.static(publicPath));
 
 // 存在しないパスは本家同様 Express 標準の 404 (Cannot GET ...) を返す
 
